@@ -45,7 +45,7 @@ int main () {
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<int> weightDist(min_weight, max_weight);
-    uniform_int_distribution<int> valueDist(0, 100);
+    uniform_int_distribution<int> valueDist(0, 10);
 
     for (int i = 0; i < number_of_items; i++) {
         json item;
