@@ -37,6 +37,7 @@ int main () {
     jsonData["number_of_items"] = number_of_items;
     jsonData["min_weight"] = min_weight;
     jsonData["max_weight"] = max_weight;
+    jsonData["id"] = 0;
     jsonData["items"] = json::array();
 
 
