@@ -30,7 +30,6 @@ vector<vector<int>> generateSubsets(const vector<int>& items) {
     for (int mask = 0; mask < (1 << n); ++mask) {
         vector<int> subset;
 
-
         for (int i = 0; i < n; i++) {
 
             if (mask & (1 << i)) {
@@ -104,7 +103,7 @@ int main () {
     for (auto& item : items) {
         int item_id = item.at("id");
         int weight = item.at("weight");
-        item_weight[item_id] = weight;  // Store weight with item ID as key
+        item_weight[item_id] = weight; 
     }
 
     unordered_map<int, int> item_value;
@@ -112,7 +111,7 @@ int main () {
     for (auto& item : items) {
         int item_id = item.at("id");
         int value = item.at("value");
-        item_value[item_id] = value;  // Store weight with item ID as key
+        item_value[item_id] = value;  
     }
 
     vector<int> itemIds;
