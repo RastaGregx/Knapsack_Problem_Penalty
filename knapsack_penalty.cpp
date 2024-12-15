@@ -137,6 +137,68 @@ int dynamic_knapsack(const std::unordered_map<int, int> &item_weight,
 }
 
 
+int greedy_knapsack(const std::unordered_map<int, int>& item_weight,
+                    const std::unordered_map<int, int>& item_value,
+                    const std::vector<int>& itemIds,
+                    int capacity,
+                    std::vector<int>& selected_items,
+                    int penalty_factor) {
+
+
+    std::vector<std::pair<int, double>> value_to_weight_ratio;
+
+    for (int id : itemIds) {
+        double ratio = static_cast<double>(item_value.at(id)) / item_weight.at(id);
+        value_to_weight_ratio.push_back({id, ratio});
+        std::cout << "Item ID: " << id 
+                  << " | Value: " << item_value.at(id) 
+                  << " | Weight: " << item_weight.at(id) 
+                  << " | Value-to-Weight Ratio: " << ratio << std::endl;
+    }
+
+
+    std::sort(value_to_weight_ratio.begin(), value_to_weight_ratio.end(),
+              [](const std::pair<int, double>& a, const std::pair<int, double>& b) {
+                  return a.second > b.second;
+              });
+
+    int current_weight = 0;
+    int total_value = 0;
+
+    for (const auto& item : value_to_weight_ratio) {
+        int id = item.first;
+        int weight = item_weight.at(id);
+        int value = item_value.at(id);
+
+        if (current_weight + weight <= capacity) {
+            selected_items.push_back(id);
+            current_weight += weight;
+            total_value += value;
+        }
+        else {
+            int excess_weight = (current_weight + weight) - capacity;
+
+            int penalized_value = value - excess_weight * penalty_factor;
+
+            std::cout << "Item ID: " << id 
+                      << " exceeds capacity by: " << excess_weight 
+                      << " | Original Value: " << value 
+                      << " | Penalized Value: " << penalized_value << std::endl;
+
+            if (penalized_value < 0) {
+                std::cout << "Item value is negative after penalty. Stopping selection." << std::endl;
+                break;
+            } else {
+                selected_items.push_back(id);
+                current_weight += weight;
+                total_value += penalized_value;
+            }
+        }
+    }
+
+    return total_value;
+}
+
 
 int main(int argc, char *argv[]) {
     nlohmann::json jsonData = readJSON();
@@ -172,8 +234,8 @@ int main(int argc, char *argv[]) {
 
     std::vector<int> selected_items;
 
-
-    int max_value = dynamic_knapsack(item_weight, item_value, itemIds, capacity, number_of_items, selected_items,penalty_factor);
+    int max_value = greedy_knapsack(item_weight, item_value, itemIds, capacity, selected_items,penalty_factor);
+ //   int max_value = dynamic_knapsack(item_weight, item_value, itemIds, capacity, number_of_items, selected_items,penalty_factor);
 
     // Output the result
     std::cout << "Maximum value that can be carried: " << max_value << std::endl;
@@ -182,5 +244,7 @@ int main(int argc, char *argv[]) {
         std::cout << item << " ";
     }
     std::cout << std::endl;
+
+
     return 0;
 }
