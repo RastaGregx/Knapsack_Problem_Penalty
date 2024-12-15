@@ -1,21 +1,32 @@
+/**
+@file knapsack_penalty.cpp
+@version 1.0
+@author Grzegorz Rybakowski 160379
+ 
+  * Kompilacja g++:
+  * Wariant bez _DEBUG:
+  ** g++ -o knapsack_penalty knapsack_penalty.cpp 
+  * Wariant z _DEBUG:
+  ** g++ -o knapsack_penalty knapsack_penalty.cpp -D_DEBUG
+
+  * Użycie: ./knapsack_penalty
+  * Opis: Stosuje algorytm wybrany z terminala do znalezienia rozwiązania problemu plecakowego na podstawie danych z data_knapsack.json
+*/
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include "nlohmann/json.hpp" 
+nlohmann::json items;
 
-using namespace std;
-using json = nlohmann::json;
-
-json items;
-
-json readJSON () {
-    ifstream inFile("data_knapsack.json");
+nlohmann::json readJSON () {
+    std::ifstream inFile("data_knapsack.json");
     if (!inFile.is_open()) {
-        cerr << "Error: Unable to open file!" << endl;
+        std::cerr << "Error: Unable to open file!" << std::endl;
         return 1;
     }
 
-    json jsonData;
+    nlohmann::json jsonData;
     inFile >> jsonData;
     inFile.close();
 
@@ -23,106 +34,153 @@ json readJSON () {
 
 };
 
-vector<vector<int>> generateSubsets(const vector<int>& items) {
-    vector<vector<int>> subsets;
-    int n = items.size();
+void processItems(const nlohmann::json& items, 
+                  std::unordered_map<int, int>& item_weight,
+                  std::unordered_map<int, int>& item_value, 
+                  std::vector<int>& itemIds) {
 
-    for (int mask = 0; mask < (1 << n); ++mask) {
-        vector<int> subset;
+    for (const auto& item : items) {
+        int item_id = item.at("id");
+        item_weight[item_id] = item.at("weight");
+        item_value[item_id] = item.at("value");
+        itemIds.push_back(item_id);
+    }
+}
 
-        for (int i = 0; i < n; i++) {
+int dynamic_knapsack(const std::unordered_map<int, int> &item_weight,
+                     const std::unordered_map<int, int> &item_value,
+                     const std::vector<int> &itemIds,
+                     int capacity,
+                     int number_of_items,
+                     std::vector<int>& selected_items,
+                     int penalty_factor) {
+    int max_value = 1;
+    int overflow = capacity*1.5; 
+    // Create a DP table initialized with 0
+    std::vector<std::vector<int>> dynamic_table(number_of_items + 1, std::vector<int>(overflow + 1, 0));
 
-            if (mask & (1 << i)) {
-                subset.push_back(items[i]);
+    for (int i = 1; i <= number_of_items; ++i) { //every item
+        int id = itemIds[i - 1];
+
+        for (int current_weight = 1; current_weight <= overflow; ++current_weight) { //every subset
+
+           if (item_weight.at(id) <= current_weight) { 
+                int without_item = dynamic_table[i - 1][current_weight];
+                int with_item = dynamic_table[i - 1][current_weight - item_weight.at(id)] + item_value.at(id);
+                dynamic_table[i][current_weight] = std::max(without_item, with_item);
+            } else {
+                dynamic_table[i][current_weight] = dynamic_table[i - 1][current_weight];
             }
         }
-
-        subsets.push_back(subset);
-
-    }
-    return subsets;
-};
-
-
-void brute_force(const vector<vector<int>>& subsets, const unordered_map<int, int>& item_weight, const unordered_map<int, int>& item_value, int& best_value, vector<int>& best_subset) {
-
-    if (subsets.empty()) {
-        cerr << "Error: No items available for brute force!" << endl;
-        return;
     }
 
-    for (int i = 0; i < subsets.size(); i++) {
-        int sum_weight = 0;
-        int sum_value = 0;
-        int backpack_capacity = 20;
-        int penalty_factor = 5;
+// std::cout << "Dynamic Programming Table (Item, Capacity, Value): \n";
+//     std::cout << "Capacity ";
+//     for (int j = 0; j <= overflow; ++j) {
+//         std::cout << j << "\t";
+//     }
+//     std::cout << "\n";
 
-        cout << "Brute force on subset " << i + 1 << ": { ";
-        
-        for (int item : subsets[i]) {
-            cout << item << " ";
-            sum_weight += item_weight.at(item);
-            sum_value += item_value.at(item);
+//     for (int i = 0; i <= number_of_items; ++i) {
+//         std::cout << "Item " << i << "\t";
+//         for (int j = 0; j <= overflow; ++j) {
+//             std::cout << dynamic_table[i][j] << "\t";
+//         }
+//         std::cout << "\n";
+//     }
+
+ //   std::cout << dynamic_table[10][capacity] << "\t";
+
+
+    // std::cout << "Capacity ";
+    // for (int j = number_of_items; j <= overflow; ++j) {
+    //     std::cout << j << "\t";
+    // }
+    // std::cout << "\n";
+
+
+        // std::cout << "Item 10" << "\t";
+        for (int j = capacity; j <= overflow; ++j) {
+            if (j > capacity) {
+                dynamic_table[number_of_items][j] -= (j - capacity)*penalty_factor;
+            }
+            // std::cout << dynamic_table[number_of_items][j] << "\t";
+            if (dynamic_table[number_of_items][j] > dynamic_table[number_of_items][max_value]) {
+                max_value = j;
+            }
         }
-        cout << "}" << endl;
-        cout << "Sum_without_penalty: " << sum_value << endl;
-        if (sum_weight > backpack_capacity) {
-            int penalty = sum_weight - backpack_capacity;
-            sum_value -= penalty * penalty_factor; // kara liniowa
-            //sum_value -= penalty * (pow(penalty_factor, 2)); //kara kwadratowa
-        }
-        cout << "Sum_weight: " << sum_weight << endl << "Sum_value: " << sum_value << endl << endl;
+    //     std::cout << "\n";
 
-        if (sum_value > best_value) {
-            best_value = sum_value;
-            best_subset = subsets[i]; 
+
+    // std::cout << max_value << std::endl;
+
+
+    int weight_left = max_value;
+    for (int i = number_of_items; i > 0 && weight_left > 0; --i) {
+        if (dynamic_table[i][weight_left] != dynamic_table[i - 1][weight_left]) { 
+            // Item i is included
+            int id = itemIds[i - 1];
+            selected_items.push_back(id);
+            weight_left -= item_weight.at(id); // reduce the remaining weight
         }
     }
-    cout << "Best subset (value = " << best_value << "): { ";
-    for (int item : best_subset) {
-        cout << item << " ";
-    }
-    cout << "}" << endl;
-};
+
+    // Output the selected items
+    // std::cout << "Selected items: ";
+    // for (int id : selected_items) {
+    //     std::cout << id << " ";
+    // }
+    // std::cout << "\n";
+
+
+    return dynamic_table[number_of_items][max_value];
+}
 
 
 
-int main () {
-    json jsonData = readJSON();
+int main(int argc, char *argv[]) {
+    nlohmann::json jsonData = readJSON();
+
 
     int id = jsonData.at("id");
     int min_weight = jsonData.at("min_weight");
     int max_weight = jsonData.at("max_weight");
-    json items = jsonData.at("items");
+    int number_of_items = jsonData.at("number_of_items");
+    nlohmann::json items = jsonData.at("items");
 
-    vector<int> best_subset;
-    int best_value = -1;
+    // Prepare data structures
+    std::unordered_map<int, int> item_weight;
+    std::unordered_map<int, int> item_value;
+    std::vector<int> itemIds;
+    int penalty_factor = 1;
+    int capacity = 10;
 
-    unordered_map<int, int> item_weight;
-
-    for (auto& item : items) {
-        int item_id = item.at("id");
-        int weight = item.at("weight");
-        item_weight[item_id] = weight; 
+    if (argc > 1) {
+        try {
+            capacity = std::stoi(argv[1]); 
+            std::cout << std::endl << "Using user-provided capacity: " << capacity << std::endl;
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Invalid capacity value. Using default capacity." << std::endl;
+            capacity = 10; 
+        }
+    } else {
+        std::cout << std::endl <<  "No capacity provided. Using default capacity." << std::endl;
     }
 
-    unordered_map<int, int> item_value;
+    processItems(items, item_weight, item_value, itemIds);
 
-    for (auto& item : items) {
-        int item_id = item.at("id");
-        int value = item.at("value");
-        item_value[item_id] = value;  
+
+    std::vector<int> selected_items;
+
+
+    int max_value = dynamic_knapsack(item_weight, item_value, itemIds, capacity, number_of_items, selected_items,penalty_factor);
+
+    // Output the result
+    std::cout << "Maximum value that can be carried: " << max_value << std::endl;
+    std::cout << "Selected items: ";
+    for (int item : selected_items) {
+        std::cout << item << " ";
     }
-
-    vector<int> itemIds;
-    for (auto& item : items) {
-        itemIds.push_back(item.at("id"));
-    }
-
-    vector<vector<int>> subsets = generateSubsets(itemIds);
-
-    brute_force(subsets, item_weight, item_value, best_value, best_subset);
-
-
-
-};
+    std::cout << std::endl;
+    return 0;
+}

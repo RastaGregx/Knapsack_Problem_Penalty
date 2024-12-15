@@ -5,3 +5,4 @@ test*
 data_knapsack.json
 help.txt
 generate
+knapsack_penalty
