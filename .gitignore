@@ -6,3 +6,5 @@ data_knapsack.json
 help.txt
 generate
 knapsack_penalty
+genetic_knapsack_penalty
+genetic_algorithm_log.txt

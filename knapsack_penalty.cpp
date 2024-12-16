@@ -234,8 +234,8 @@ int main(int argc, char *argv[]) {
 
     std::vector<int> selected_items;
 
-    int max_value = greedy_knapsack(item_weight, item_value, itemIds, capacity, selected_items,penalty_factor);
- //   int max_value = dynamic_knapsack(item_weight, item_value, itemIds, capacity, number_of_items, selected_items,penalty_factor);
+   // int max_value = greedy_knapsack(item_weight, item_value, itemIds, capacity, selected_items,penalty_factor);
+   int max_value = dynamic_knapsack(item_weight, item_value, itemIds, capacity, number_of_items, selected_items,penalty_factor);
 
     // Output the result
     std::cout << "Maximum value that can be carried: " << max_value << std::endl;
